@@ -1,0 +1,55 @@
+name: Temporary Sandbox Validation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Compile Python scripts
+        run: python -m compileall -q scripts
+
+      - name: Smoke-test title filtering helpers without API calls
+        env:
+          APOLLO_API_KEY: sandbox-placeholder
+        run: |
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+
+          path = Path("scripts/STEP_1_apollo_people_search.py")
+          spec = importlib.util.spec_from_file_location("apollo_step1", path)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          assert module.classify_title("Chief Technology Officer") == "KEEP"
+          assert module.classify_title("Executive Assistant to CEO") == "REVIEW"
+          assert module.classify_title("Platform Engineer") == "REVIEW"
+          assert module.classify_title("") == "REVIEW"
+          assert "director" in module.seniorities_for_company({"org_employees_input": "100"}) 
+          assert "manager" in module.seniorities_for_company({"org_employees_input": "25"})
+          print("Step 1 helper smoke tests passed.")
+          PY
+
+      - name: Check TypeScript syntax
+        run: npx --yes esbuild scripts/STEP_1point5_filter_search_results_by_titles.ts --outfile=/tmp/filter-script.js --platform=node --format=cjs
+
+      - name: Report
+        run: echo "Offline validation passed. No Apollo API requests were made."
