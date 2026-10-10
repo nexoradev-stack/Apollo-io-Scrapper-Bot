@@ -44,14 +44,14 @@ A Python workflow for Apollo.io people search, enrichment, optional CRM sync, ca
    .\.venv\Scripts\Activate.ps1
    ```
 
-3. Install dependencies. Check the Python imports in the scripts and install their packages (the workflow primarily uses `requests`, `pandas`, and `openpyxl`):
+3. Install the declared dependencies:
 
    ```bash
    python -m pip install --upgrade pip
-   pip install requests pandas openpyxl
+   pip install -r requirements.txt
    ```
 
-4. **Secure the Apollo API key before running anything.** Upstream versions of the scripts contain a hard-coded API key. Do not run or redistribute scripts with embedded credentials. Replace hard-coded values with an environment variable, for example:
+4. **Set the Apollo API key before running Step 1 or Step 2.** These scripts read the key from an environment variable and will stop if it is missing:
 
    ```python
    API_KEY = os.environ.get("APOLLO_API_KEY")
@@ -83,17 +83,17 @@ Run the scripts in order, reviewing each workbook before proceeding:
 
 2. **Title filtering (optional):** open the people-search workbook in Excel for the web. Follow `scripts/titles to be removed.md` and run `scripts/STEP_1point5_filter_search_results_by_titles.ts` from the Automate tab. Review results before enrichment.
 
-3. **Enrichment / CRM sync:** update the input workbook setting in `scripts/STEP_2_apollo_bulk_match_and_enrich_and_bulkCreate.py`, then run it. Review the `Enriched`, `Matched`, `Unmatched`, and `CRM Save` sheets. Keep CRM creation disabled until you intentionally want records written to your Apollo account.
+3. **Enrichment / optional CRM sync:** by default, Step 2 automatically selects the latest `apollo_people_search_*.xlsx` in `output/`. To choose a specific file, set `APOLLO_ENRICH_INPUT_FILE` to its filename before running the script. Review the `Enriched`, `Matched`, `Unmatched`, and `CRM Save` sheets. CRM writes and personal-email reveal are disabled by default.
 
-4. **Campaign format:** configure the input workbook in `scripts/STEP_3_apollo_to_ignite_format.py`, then run it to generate `output/ignite_ready_contacts_*.xlsx`.
+4. **Campaign format:** the default uses `output/master_lead_database.xlsx` (created by Step 2). Run `python scripts/STEP_3_apollo_to_ignite_format.py` to generate `output/ignite_ready_contacts_*.xlsx`. To use the latest enriched workbook instead, change `USE_MASTER_DB = False`; the newest enriched file is selected automatically, or set `APOLLO_ENRICHED_INPUT_FILE` to a filename.
 
-5. **Master merge (optional):** configure the master and source workbook in `scripts/STEP_4_apollo_ignite_master_merger.py`, then run it. Inspect the newly generated merged workbook; retain a backup of your existing master data.
+5. **Master merge (optional):** place your own master workbook in `output/`, set `APOLLO_MERGE_MASTER_FILE` to its filename, and run `python scripts/STEP_4_apollo_ignite_master_merger.py`. Step 4 selects the newest `ignite_ready_contacts_*.xlsx` automatically; use `APOLLO_MERGE_SOURCE_FILE` to override it. Inspect the new merged workbook and keep a backup of the original master.
 
 Detailed upstream usage notes: [How to Use Scrapper Utility](https://github.com/tejaspatel-jt/tj-apollo-data-scrapper/blob/master/How%20to%20Use%20Scrapper%20Utility.md).
 
 ## Configuration checklist
 
-- Update example or stale workbook filenames in each stage before running it.
+- Review input selection and workbook tab settings before each run. Steps 2–4 support auto-selecting the newest expected output when no override is configured.
 - Review all settings near the top of each script.
 - Keep CRM create/write options disabled until you have reviewed test results and explicitly approve a write.
 - Do not turn on personal-email or phone reveals unless your plan allows them and they are necessary.
@@ -122,4 +122,4 @@ Detailed upstream usage notes: [How to Use Scrapper Utility](https://github.com/
 
 ## Project status
 
-README and usage guidance have been added. The scripts still require a security/configuration review before production use; all features have not been independently tested in this repository.
+README and workflow scripts have been added. Script configuration has been made safer, but live Apollo API runs, Microsoft Office Script execution, and end-to-end workbook processing still need testing in your environment.
