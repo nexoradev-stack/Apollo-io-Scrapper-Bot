@@ -43,10 +43,8 @@ TIMESTAMP = datetime.now().strftime("%d%b%Y_%H%M%S").lower()
 USE_MASTER_DB = True   # True → use master DB | False → use enriched file
 
 MASTER_DB_FILE = "master_lead_database.xlsx"
-# MASTER_DB_FILE = "master_lead_database_sample.xlsx"    # Delete me later
-# MASTER_DB_FILE = "master_lead_database_perfect_sample_6may2026.xlsx"    # Delete me later
-
-ENRICHED_FILE = "apollo_enriched_latest.xlsx"  # change if needed
+# Used only if USE_MASTER_DB is False; newest enriched workbook is selected when unset.
+ENRICHED_FILE = os.environ.get("APOLLO_ENRICHED_INPUT_FILE", "").strip()
 ENRICHED_SHEET_NAME = "Enriched"
 
 OUTPUT_FILE = os.path.join(
@@ -155,8 +153,19 @@ def load_input_data():
         df = pd.read_excel(path, dtype=str)
 
     else:
-        path = os.path.join(OUTPUT_DIR, ENRICHED_FILE)
-        print(f"  Source: Enriched File → {ENRICHED_FILE}")
+        filename = ENRICHED_FILE
+        if not filename:
+            candidates = [
+                name for name in os.listdir(OUTPUT_DIR)
+                if name.startswith("apollo_enriched_") and name.lower().endswith((".xlsx", ".xls"))
+            ]
+            if not candidates:
+                raise FileNotFoundError("No apollo_enriched_*.xlsx file found in output/. Run Step 2 first.")
+            filename = max(candidates, key=lambda name: os.path.getmtime(os.path.join(OUTPUT_DIR, name)))
+        path = os.path.join(OUTPUT_DIR, filename)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Enriched input file not found: {path}")
+        print(f"  Source: Enriched File → {filename}")
         df = pd.read_excel(path, sheet_name=ENRICHED_SHEET_NAME, dtype=str)
 
     df.fillna("", inplace=True)
