@@ -35,7 +35,6 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # ║                     CONFIGURATION                           ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-# API_KEY = "l4AkVpSXwV9fICkebUMAXw"        # Normal API key
 API_KEY = os.environ.get("APOLLO_API_KEY")
 if not API_KEY:
     raise RuntimeError("Set APOLLO_API_KEY in your environment before running this script")
