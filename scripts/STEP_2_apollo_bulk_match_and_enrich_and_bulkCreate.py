@@ -47,11 +47,8 @@ if not API_KEY:
 TIMESTAMP = datetime.now().strftime("%d%b%Y_%H%M%S").lower()   # e.g. 27apr2026_124055
 
 # Input file — filename inside output/ folder (your filtered Step 1 output)
-# BULK_ENRICH_INPUT_FILE = "apollo_people_search_04may2026_161617.xlsx"
-# BULK_ENRICH_INPUT_FILE = "apollo_people_search_sample.xlsx"
-# BULK_ENRICH_INPUT_FILE = "apollo_people_search_06may2026_125052.xlsx"
-# BULK_ENRICH_INPUT_FILE = "apollo_people_search_06may2026_130139.xlsx"
-BULK_ENRICH_INPUT_FILE = "apollo_people_search_08sep2026_120722.xlsx"
+# Optional explicit input filename in output/. When unset, newest people-search workbook is used.
+BULK_ENRICH_INPUT_FILE = os.environ.get("APOLLO_ENRICH_INPUT_FILE", "").strip()
 
 BULK_ENRICH_INPUT_SHEET = "Contacts"
 
@@ -191,7 +188,19 @@ BASE_URL = "https://api.apollo.io/api/v1"
 
 
 def load_input_file():
-    path = os.path.join(OUTPUT_DIR, BULK_ENRICH_INPUT_FILE)
+    global BULK_ENRICH_INPUT_FILE
+    if not BULK_ENRICH_INPUT_FILE:
+        candidates = [
+            os.path.join(OUTPUT_DIR, name)
+            for name in os.listdir(OUTPUT_DIR)
+            if name.startswith("apollo_people_search_") and name.lower().endswith((".xlsx", ".xls", ".csv"))
+        ]
+        if not candidates:
+            raise FileNotFoundError("No apollo_people_search_*.xlsx/.csv file found in output/. Run Step 1 first.")
+        path = max(candidates, key=os.path.getmtime)
+        BULK_ENRICH_INPUT_FILE = os.path.basename(path)
+    else:
+        path = os.path.join(OUTPUT_DIR, BULK_ENRICH_INPUT_FILE)
     if not os.path.exists(path):
         raise FileNotFoundError(
             f"Input file not found: '{path}'\n"
