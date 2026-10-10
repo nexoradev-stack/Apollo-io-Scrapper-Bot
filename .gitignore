@@ -1,0 +1,19 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local generated data and logs
+output/*
+!output/.gitkeep
+*.xlsx
+*.xls
+*.log
+
+# Editor / OS
+.DS_Store
+.vscode/

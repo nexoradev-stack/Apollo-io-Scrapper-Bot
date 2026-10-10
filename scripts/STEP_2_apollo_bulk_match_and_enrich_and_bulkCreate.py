@@ -63,14 +63,14 @@ MASTER_DB = os.path.join(OUTPUT_DIR, "master_lead_database.xlsx")
 # ── Enrichment settings ──────────────────────────────────────────────────────
 BATCH_SIZE             = 10     # Apollo hard limit: max 10 IDs per bulk_match call
 REQUEST_DELAY          = 1.2    # Seconds between API calls (avoid rate-limiting)
-REVEAL_PERSONAL_EMAILS = True   # True = uses extra credits (requires supported plan)
+REVEAL_PERSONAL_EMAILS = False  # Enable only when authorised; consumes extra credits
 REVEAL_PHONE_NUMBER    = False  # True = uses extra credits
 
 # 
 SINGLE_SHEET_OUTPUT = False   # 🔁 Toggle this
 
 # ── CRM save settings ────────────────────────────────────────────────────────
-CREATE_IN_CRM   = True   # Set True to auto-call contacts/bulk_create after enrichment
+CREATE_IN_CRM   = False  # Safe default: review output before explicitly enabling CRM writes
                           # Set False to only write the "CRM Save" sheet for manual review
 CRM_BATCH_SIZE  = 100     # contacts/bulk_create limit: max 100 per request
 RUN_DEDUPE      = True    # Prevents duplicate contacts; existing ones returned separately
