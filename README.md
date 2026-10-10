@@ -17,7 +17,8 @@ A Python workflow for Apollo.io people search, enrichment, optional CRM sync, ca
 ## Requirements
 
 - Python 3.10 or newer
-- An Apollo API key and the relevant endpoint/feature permissions
+- An Apollo API key and the relevant endpoint/feature permissions for API-based Steps 1–2
+- For the optional browser exporter: Playwright Chromium and an Apollo account you are authorised to use
 - API credits for enrichment or data-reveal features you enable
 - Excel for the web / Microsoft 365 to run the optional title-filter Office Script
 
@@ -72,6 +73,24 @@ A Python workflow for Apollo.io people search, enrichment, optional CRM sync, ca
    ```
 
 5. Review `inputs/companies_input.csv` and keep its column headers intact. Replace the example company list with companies you are authorised to research.
+
+## Optional: browser-based visible-page export (no API key)
+
+If you do not have an Apollo API key, you can try the visible-browser exporter. It opens a normal browser, lets you sign in manually, and collects only profile information rendered in the page. It does not intercept private API traffic or store your password in the script.
+
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   python -m playwright install chromium
+   ```
+2. Run:
+   ```bash
+   python scripts/STEP_1_apollo_browser_search.py
+   ```
+3. Paste an Apollo people-search URL, sign in in the opened browser if needed, and confirm the results are visible.
+4. After each page, manually move to the next results page in the browser and press Enter in the terminal. Type `done` to export.
+
+The exporter writes `output/apollo_browser_search_*.xlsx` with a Contacts sheet and a Summary sheet. Name, job title, company, and email fields depend on what Apollo visibly renders; title/company detection is heuristic, so review the workbook. If Apollo changes its page layout or blocks automated browsing, the script may need adjustment. This browser export is **not a replacement for API enrichment or CRM sync**; Steps 2 and other API-based features still require your own authorised API key. Use the browser exporter only in ways permitted by Apollo's terms and your account permissions.
 
 ## Workflow guide
 
