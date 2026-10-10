@@ -1,0 +1,20 @@
+name: Browser Exporter Syntax Test
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/browser-exporter-test.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas openpyxl playwright
+      - run: python -m py_compile scripts/STEP_1_apollo_browser_search.py
+      - run: python -c "from playwright.sync_api import sync_playwright; print('Playwright import OK')"
