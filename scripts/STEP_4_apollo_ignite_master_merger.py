@@ -59,16 +59,16 @@ TIMESTAMP = datetime.now().strftime("%d%b%Y_%H%M%S").lower()
 # ── 1. INPUT FILES ────────────────────────────────────────────
 # Master Excel file — this is your "Scrapped Master Data By Tejas - Apollo" sheet.
 # It is NEVER modified. The merged result always goes to a new output file.
-# MASTER_FILE = "Scrapped Master Data By Tejas - Apollo_sample.xlsx"
-MASTER_FILE = "Scrapped Master Data By Tejas - Apollo-Utility.xlsx"
+# Place your own master workbook in output/ and set APOLLO_MERGE_MASTER_FILE.
+MASTER_FILE = os.environ.get("APOLLO_MERGE_MASTER_FILE", "").strip()
 
 # The sheet tab name inside the master Excel file that holds the data.
 # MASTER_FILE_SHEET_NAME = "CombinedData - Master"   # <- change if your tab has a different name
 MASTER_FILE_SHEET_NAME = "Sheet1"   # <- change if your tab has a different name
 
 # Source file — output of Script 3 (Campaign Formatter / ignite_ready_contacts_*.xlsx)
-# SOURCE_FILE = "ignite_ready_contacts_latest.xlsx"   # <- change to your actual file name
-SOURCE_FILE = "ignite_ready_contacts_08sep2026_151239.xlsx"   # <- change to your actual file name
+# Optional explicit source filename in output/. When unset, newest campaign-ready workbook is selected.
+SOURCE_FILE = os.environ.get("APOLLO_MERGE_SOURCE_FILE", "").strip()
 
 # The sheet tab name inside the source Excel file.
 SOURCE_FILE_SHEET_NAME = "Sheet1"   # <- change if needed (usually Sheet1 or the only tab)
@@ -409,15 +409,26 @@ def main():
     print("  Ignite Master Merger — Step 4 of 4")
     print("  mergeSourceSheetsIntoMaster  (Python Port)")
     print("═" * 62)
-    print(f"  Master file   : {MASTER_FILE}")
-    print(f"  Source file   : {SOURCE_FILE}")
+    print(f"  Master file   : {MASTER_FILE or os.environ.get('APOLLO_MERGE_MASTER_FILE', 'auto-detect')}")
+    print(f"  Source file   : {SOURCE_FILE or os.environ.get('APOLLO_MERGE_SOURCE_FILE', 'auto-detect')}")
     print(f"  Output file   : {os.path.basename(OUTPUT_FILE)}")
     print(f"  Dedup columns : {', '.join(DEDUPE_COLUMNS)}")
     print(f"  Occurrence    : {'First kept (master priority)' if KEEP_FIRST_OCCURRENCE else 'Last kept (source overwrites)'}")
     print("═" * 62 + "\n")
 
     # STEP 1 : Load & validate master
-    master_path = os.path.join(OUTPUT_DIR, MASTER_FILE)
+    master_filename = MASTER_FILE
+    if not master_filename:
+        candidates = [
+            name for name in os.listdir(OUTPUT_DIR)
+            if name.lower().endswith((".xlsx", ".xls")) and "master" in name.lower()
+            and "merged" not in name.lower()
+        ]
+        if not candidates:
+            print("  ❌  No master workbook found in output/. Set APOLLO_MERGE_MASTER_FILE or place your master workbook in output/.")
+            return
+        master_filename = max(candidates, key=lambda name: os.path.getmtime(os.path.join(OUTPUT_DIR, name)))
+    master_path = os.path.join(OUTPUT_DIR, master_filename)
     if not os.path.exists(master_path):
         print(f"  ❌  Master file not found: {master_path}")
         print("      -> Place the file in the 'output/' folder and re-run.\n")
@@ -444,7 +455,17 @@ def main():
     print(f"  └─ {len(output_rows)} unique master rows loaded.\n")
 
     # STEP 4 : Load & merge source file
-    source_path = os.path.join(OUTPUT_DIR, SOURCE_FILE)
+    source_filename = SOURCE_FILE
+    if not source_filename:
+        candidates = [
+            name for name in os.listdir(OUTPUT_DIR)
+            if name.startswith("ignite_ready_contacts_") and name.lower().endswith((".xlsx", ".xls"))
+        ]
+        if not candidates:
+            print("  ❌  No ignite_ready_contacts_*.xlsx file found in output/. Run Step 3 first.")
+            return
+        source_filename = max(candidates, key=lambda name: os.path.getmtime(os.path.join(OUTPUT_DIR, name)))
+    source_path = os.path.join(OUTPUT_DIR, source_filename)
     if not os.path.exists(source_path):
         print(f"  ❌  Source file not found: {source_path}")
         print("      -> Place the file in the 'output/' folder and re-run.\n")
